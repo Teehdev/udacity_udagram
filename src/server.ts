@@ -1,5 +1,7 @@
 import express from 'express';
+import { Request, Response } from 'express'
 import bodyParser from 'body-parser';
+import morgan from 'morgan'
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
 (async () => {
@@ -12,6 +14,14 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
+  app.use(
+    morgan(
+      ":date[iso] :method :url :status :res[content-length] - :response-time ms"
+    )
+  );
+
+
+  
 
 
 
@@ -21,24 +31,31 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   
   // Root Endpoint
   // Displays a simple message to the user
-  app.get( "/", async ( req, res ) => {
-    res.send("try GET /filteredimage?image_url={{}}")
+  app.get( "/", async ( req: Request, res: Response ) => {
+    return res.status(200).json("try GET /filteredimage?image_url={{}}, Welcome to the Cloud!")
   } );
 
-  app.get("/filteredimage",  async (req, res) => {
+  app.get("/filteredimage",  async ( req: Request, res: Response) => {
+    
+    let image_url: string
     try {
-      var image_url = req.query.image_url;
+     image_url = req.query.image_url;
+     console.log(image_url)
   
       if(!image_url) {
         return res.status(400).json({message: "no image url query found"})
       }
-     var file_response = await filterImageFromURL(image_url);
-     res.sendFile(file_response)
-     deleteLocalFiles([file_response])
+      const file_response = await filterImageFromURL(image_url);
+      console.log(file_response)
+
+     res.status(200).sendFile(file_response)
+     console.log(file_response)
+     req.on('close', ()=> deleteLocalFiles([file_response]))
+
+
     } catch (error) {
       return res.status(500).json({message: error})
     }
-
 
   })
   
